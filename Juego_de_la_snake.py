@@ -39,7 +39,39 @@ class Food:
         # hacemos que la posicion tome las coordenadas anteriores
         posicion = Vector2(x, y)
         return posicion
+# Creacion de clase para el objeto que sera la serpiente
+class Snake:
+    # Coordenadas del cuerpo de la serpiente
+    def __init__(self):
+        self.body = [Vector2(6,9), Vector2(5,9), Vector2(4,9)]
+        # Para moverla a la derecha a la serpiente al iniciar el juego
+        self.direction = Vector2(1, 0)
+    
+    # Dibujo del cuerpo de la serpiente
+    def draw(self):
+        for segmento in self.body:
+            segmento_rect = (segmento.x * celda_size, segmento.y * celda_size, celda_size, celda_size)
+            # El cero representa si hay hueco, pero con cero lo quitamos y el siete representa cuan redondeada esta la esquina
+            pygame.draw.rect(pantalla, Verde_oscuro, segmento_rect, 0, 7)
+            
+    # Para actualizar la posicion de la serpiente
+    def update(self):
+        # Removemos la ultima parte del cuerpo con cada update
+        self.body = self.body[:-1]
+        # Estamos inserntado la nueva parte o cabeza al inicio del cuerpo dependiendo la direccion
+        self.body.insert(0, self.body[0] + self.direction)
+
+class Game:
+    def __init__(self):
+        self.serpiente = Snake()
+        self.comida = Food()
+    
+    def draw(self):
+        self.comida.draw()
+        self.serpiente.draw()
         
+    def update(self):
+        self.serpiente.update()
 
 # Para crear el canvas/display de 750x750, pasamos de poner el numero fijo a asignar el tamaño dependidendod de el size de las celdas y la cantidad
 pantalla = pygame.display.set_mode((celda_size*number_of_celdas,celda_size*number_of_celdas))#750,750 anteriormente
@@ -50,11 +82,21 @@ pygame.display.set_caption("Retro Snake")
 # Reloj de objeto
 reloj = pygame.time.Clock()
 
-# Asignando la clase Food a la variable comida
-comida = Food()
+# Asignando la clase Food a la variable comida y Snake a serpiente
+#comida = Food()  ya no usados, se agregaron a la clase game
+#serpiente = Snake()
+
+# Asignando la class Game a juego
+juego = Game()
+
 comida_surface = pygame.image.load("Graficos/comida.png")
 # como la imgane es usada es de 500x500 toca transformarla a la escala de la celda 30x30
 comida_surface = pygame.transform.scale(comida_surface, (celda_size, celda_size))
+
+# Asignando el evento del jugador a una variable, tipo de evento especial para crear evento customs
+SERPIENTE_UPDATE = pygame.USEREVENT
+# Timer para que el evento de la serpiente pase solo cada 200 milisegundos (trigger o activador y cada cuanto)
+pygame.time.set_timer(SERPIENTE_UPDATE, 200)
 
 ########################################
 ############ GAME LOOP #################
@@ -62,18 +104,37 @@ comida_surface = pygame.transform.scale(comida_surface, (celda_size, celda_size)
 # Obtiene los eventos que pasan en pygame como lista
 while True:
     for event in pygame.event.get():
+        # Hacienco que detecte la activacion del evento
+        if event.type == SERPIENTE_UPDATE:
+            # Actualizando la posicion de la serpiente en cada llamado de evento
+            juego.update()
         # Quit event o evento de salir para no romper el loop
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
             
+        # Representa el evento de tocar la una tecla para mover la serpiente a esa direccion
+        if event.type == pygame.KEYDOWN:
+            # Representa tocar la flecha hacia arriba solo si no va para abajo
+            if event.key == pygame.K_UP and juego.serpiente.direction != Vector2(0, 1):
+                juego.serpiente.direction = Vector2(0, -1)
+            # Representa tocar la flecha hacia abajo solo si no va para arriba
+            if event.key == pygame.K_DOWN and juego.serpiente.direction != Vector2(0, -1):
+                juego.serpiente.direction = Vector2(0, 1)
+            # Representa tocar la flecha hacia izquierda solo si no va a la izquierda
+            if event.key == pygame.K_LEFT and juego.serpiente.direction != Vector2(1, 0):
+                juego.serpiente.direction = Vector2(-1, 0)
+            # Representa tocar la flecha hacia derecha solo si no va a la izquierda
+            if event.key == pygame.K_RIGHT and juego.serpiente.direction != Vector2(-1, 0):
+                juego.serpiente.direction = Vector2(1, 0)
+    
  # Dibujado
     # Definiendo el color que tendra la pantalla de fondo
     pantalla.fill(Verde)
-    # Dibujar todo lo que representa la comida (class Food)
-    comida.draw()
-    
-    
+    # Dibujar todo lo que representa la comida (class Food) y todo lo que repesenta la serpiente (class Snake( ))
+    #comida.draw() Se agregaron a la class Game
+    #serpiente.draw()
+    juego.draw()
     
     # Toma todo los cambios hechos en los objetos del juego y dibuja la imagen de ellos
     pygame.display.update()
