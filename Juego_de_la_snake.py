@@ -65,6 +65,9 @@ class Snake:
         self.direction = Vector2(1, 0)
         # Definimos por defecto que la serpiente no crece
         self.add_segment = False
+        # Agrega sonidos para comer y golpear
+        self.eat_sound = pygame.mixer.Sound("Sonidos/eat.mp3")
+        self.wall_hit_sound = pygame.mixer.Sound("Sonidos/wall.mp3")
     
     # Dibujo del cuerpo de la serpiente
     def draw(self):
@@ -118,6 +121,7 @@ class Game:
             # Hacemos que cada ves que se genera comida tomara como si la serpiente debe crecer
             self.serpiente.add_segment = True
             self.score += 1
+            self.serpiente.eat_sound.play()
             
     def check_collision_with_edges(self):
         # Si la cabeza esta en x en la posicion mayor a la del tablero o menor a 0 que es donde inicia, significa que salio por izquierda o derecha
@@ -136,6 +140,7 @@ class Game:
         # Si el estado esta asi no inicie el juego
         self.estado = "STOPPED"
         self.score = 0
+        self.serpiente.wall_hit_sound.play()
         
     def check_collision_with_tail(self):
         # Se crea una lista con todos los segmentos de la serpiente menos la cabeza, por eso 1 y no 0
