@@ -7,7 +7,8 @@ from pygame.math import Vector2
 pygame.init()
 
 # Asignacion de colores para el juego
-Verde = (173, 204, 96)
+#Verde = (173, 204, 96)
+Verde = (118, 216, 174)
 Verde_oscuro = (43, 51, 24)
 
 # Asignacion del tamaño de la celda
@@ -18,9 +19,9 @@ number_of_celdas = 25
 # Creacion de clase para el objeto que sera la comida
 class Food:
     # Definicion del metodo del objeto para editar su posicion
-    def __init__(self):
+    def __init__(self, snake_body):
         # Vector2 class que ofrece pygame para ubicar la celda con comida, ahora usamos la posicin random que generamos en x y y
-        self.position = self.generate_random_pos()   # anterior Vector2(5,6)
+        self.position = self.generate_random_pos(snake_body)   # anterior Vector2(5,6)
         
     def draw(self):
         # el rect es usado para dibujar rectangulos invisibles para posicionamiento de colicion/deteccion y dibujaro bjetos
@@ -31,14 +32,24 @@ class Food:
         # nuevo metodo que dibujara la imagen de comida que asignamos
         pantalla.blit(comida_surface, comida_rect)
         
-    # Dejaremos de hacer que la comida siempre aparezca en la misma posicion para que salga random
-    def generate_random_pos(self):
+        # Definimos especificamente para la posicion random de la celula para no copiar y copiar el codigo y solo llamarlo
+    def generate_random_cell(self):
         # toma un numero random en x y en y
         x = random.randint(0, number_of_celdas -1)
         y = random.randint(0, number_of_celdas - 1)
-        # hacemos que la posicion tome las coordenadas anteriores
-        posicion = Vector2(x, y)
+        # hacemos que la posicion tome las coordenadas de arriba
+        return Vector2(x, y)
+        
+    # Dejaremos de hacer que la comida siempre aparezca en la misma posicion para que salga random
+    def generate_random_pos(self, snake_body):
+        # hacemos que la posicion tome las coordenadas que regresa el metodo random cell
+        posicion = self.generate_random_cell()
+        # Para hacer que si la comida esta en el acuerpo de la serpiente se genere en otro lugar
+        while posicion in snake_body:
+            # hacemos que la posicion tome las coordenadas de arriba
+            posicion = self.generate_random_cell()
         return posicion
+    
 # Creacion de clase para el objeto que sera la serpiente
 class Snake:
     # Coordenadas del cuerpo de la serpiente
@@ -46,6 +57,8 @@ class Snake:
         self.body = [Vector2(6,9), Vector2(5,9), Vector2(4,9)]
         # Para moverla a la derecha a la serpiente al iniciar el juego
         self.direction = Vector2(1, 0)
+        # Definimos por defecto que la serpiente no crece
+        self.add_segment = False
     
     # Dibujo del cuerpo de la serpiente
     def draw(self):
@@ -54,17 +67,24 @@ class Snake:
             # El cero representa si hay hueco, pero con cero lo quitamos y el siete representa cuan redondeada esta la esquina
             pygame.draw.rect(pantalla, Verde_oscuro, segmento_rect, 0, 7)
             
-    # Para actualizar la posicion de la serpiente
+    # Para actualizar la posicion de la serpiente (aqui para moverla siempre se genera una celda mas, pero tambien se borra una, por lo que al hacer que si come no se borre crece uno)
     def update(self):
-        # Removemos la ultima parte del cuerpo con cada update
-        self.body = self.body[:-1]
-        # Estamos inserntado la nueva parte o cabeza al inicio del cuerpo dependiendo la direccion
+        # Estamos insertando la nueva parte o cabeza al inicio del cuerpo dependiendo la direccion
         self.body.insert(0, self.body[0] + self.direction)
+        # Hacemos un if para cuando la serpiente crezca solo una celda pase a false y ya no crezca hasta comer denuevo
+        if self.add_segment == True:
+            self.add_segment = False
+        # Si es falso no crece
+        else:
+            # Removemos la ultima parte del cuerpo con cada update para simular que avanza solo cuando no come
+            self.body = self.body[:-1]
+            
 
+# Creacion de clase para los llamados y asignacion de las otras clases
 class Game:
     def __init__(self):
         self.serpiente = Snake()
-        self.comida = Food()
+        self.comida = Food(self.serpiente.body)
     
     def draw(self):
         self.comida.draw()
@@ -72,6 +92,14 @@ class Game:
         
     def update(self):
         self.serpiente.update()
+        self.check_collision_with_food()
+        
+    def check_collision_with_food(self):
+        # Si la serpiente toca la comida segenera una nueva comida en otro lugar
+        if self.serpiente.body[0] == self.comida.position:
+            self.comida.position = self.comida.generate_random_pos(self.serpiente.body)
+            # Hacemos que cada ves que se genera comida tomara como si la serpiente debe crecer
+            self.serpiente.add_segment = True
 
 # Para crear el canvas/display de 750x750, pasamos de poner el numero fijo a asignar el tamaño dependidendod de el size de las celdas y la cantidad
 pantalla = pygame.display.set_mode((celda_size*number_of_celdas,celda_size*number_of_celdas))#750,750 anteriormente
